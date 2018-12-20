@@ -1,5 +1,4 @@
 const express = require('express');
-
 const app = express();
 
 const server = require('http').createServer(app);
@@ -10,8 +9,7 @@ users = [];
 connections = [];
 
 server.listen(process.env.PORT || 3000);
-console.log('Server running on port 3000...');
-
+console.log('Server running on port 3000.');
 
 app.get('/', function(req, res){
     res.sendFile(__dirname + '/index.html');
@@ -19,29 +17,33 @@ app.get('/', function(req, res){
 
 io.sockets.on('connection', function(socket){
     connections.push(socket);
-    console.log('%s connected', connections.length);
+    console.log('User connected: %s online', connections.length);
 
     socket.on('disconnect', function(data){
         if(socket.username){
             users.splice(users.indexOf(socket.username), 1);
-            updateUsernames();
-        }        
+            updateUsers();
+        }
         connections.splice(connections.indexOf(socket), 1);
-        console.log('Disconnected, %s left', connections.length);
+        console.log('User disconneted: %s online', connections.length);
     });
-    
+
     socket.on('send message', function(data){
         io.sockets.emit('new message', {msg: data, user: socket.username});
     });
 
     socket.on('new user', function(data, callback){
-        callback(true);
-        socket.username = data;
-        users.push(socket.username);
-        updateUsernames();
+        if(users.indexOf(data) != -1){
+            callback(false);
+        } else {
+            callback(true);
+            socket.username = data;
+            users.push(socket.username);
+            updateUsers();
+        }
     });
 
-    function updateUsernames(){
+    function updateUsers(){
         io.sockets.emit('get users', users);
     }
 });
